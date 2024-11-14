@@ -10,7 +10,7 @@ app.use(express.json());
 
 //Gym-Genesis   ,   pMuYuFgPNv8jxcg2 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.i1uhr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
@@ -63,6 +63,23 @@ async function run() {
     app.get('/classes-manage', async (req, res) => {
         const result = await classesCollection.find().toArray();
         res.send(result);
+    })
+
+    // updated classes status and reasons 
+    app.patch('/change-status/:id', async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const reason = req.body.reason;
+      const filter = {_id: new ObjectId(id)};
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+         status : status,
+         reasons : reason,
+        },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
     })
 
     // Send a ping to confirm a successful connection

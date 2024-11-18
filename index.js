@@ -1,5 +1,5 @@
 const express = require('express')
-const cors = require('cors')
+var cors = require('cors')
 const app = express()
 const port = process.env.PORT || 5000;
 require('dotenv').config();
@@ -94,6 +94,66 @@ async function run() {
       const id = req.params.id;
       const query = {_id : new ObjectId(id)};
       const result = await classesCollection.findOne(query);
+      res.send(result);
+    })
+
+    // update class details (all data)
+    app.put('/update-class/:id',  async(req, res) => {
+      const id = req.params.id;
+      const updateClass = req.body;
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert : true};
+      const updateDoc = {
+        $set: {
+          name : updateClass.name,
+          description : updateClass.description,
+          price : updateClass.price,
+          availableSeats : parseInt(updateClass.availableSeats),
+          videoLink : updateClass.videoLink,
+          status : 'pending',
+        }
+      }
+      const result = await classesCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    })
+
+    // cart Routes 
+    app.post('/add-to-cart', async (req, res) => {
+      const newCartItem = req.body;
+      const result = await cartCollection.insertOne(newCartItem);
+      res.send(result);
+    });
+
+    // get cart item by id 
+    app.get('/cart-item/:id', async (req, res) => {
+      const id = req.params.id;
+      const email = req.body.email;
+      const query = {
+        classId : id, 
+        userMail : email,
+      };
+      const projection = { classId : 1};
+      const result = await cartCollection.findOne(query, { projection :  projection});
+      res.send(result);
+    });
+
+    // cart info by user email 
+    app.get('/cart/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {userMail : email};
+      const projection = {classId : 1};
+      const carts = await cartCollection.find(query, {projection : projection});
+      const classIds = carts.map(cart => new ObjectId(cart.classId));
+      const query2 = {_id : {$in : classIds}}
+      const result = classesCollection.find(query2).toArray();
+      res.send(result);
+    });
+
+    // delete cart item 
+    app.delete('/delete-cart-item/:id', async (req, res) =>{
+      const id = req.params.id;
+      const query = {classId : id};
+      const result = await cartCollection.deleteOne(query);
       res.send(result);
     })
                                                       
